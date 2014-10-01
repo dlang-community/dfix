@@ -5,9 +5,15 @@ import std.d.lexer;
 import std.array;
 import std.stdio;
 
-void main(string[] args)
+int main(string[] args)
 {
-	File input = File(args[1]);
+	if (args.length < 2)
+	{
+		stderr.writeln("File path is a required argument");
+		return 1;
+	}
+
+	File input = File(args[1], "rb");
 	ubyte[] inputBytes = uninitializedArray!(ubyte[])(input.size);
 	input.rawRead(inputBytes);
 	input.close();
@@ -96,11 +102,33 @@ void main(string[] args)
 			writeToken(i); // alias
 				i++;
 			size_t j = i + 1;
+
+			int depth;
 			loop: while (j < tokens.length) switch (tokens[j].type)
 			{
-			case tok!"=": j++; oldStyle = false;
-			case tok!";": break loop;
-			default: j++; break;
+			case tok!"(":
+				depth++;
+				j++;
+				break;
+			case tok!")":
+				depth--;
+				if (depth < 0)
+				{
+					oldStyle = false;
+					break loop;
+				}
+				j++;
+				break;
+			case tok!"=":
+			case tok!"this":
+				j++;
+				oldStyle = false;
+				break;
+			case tok!";":
+				break loop;
+			default:
+				j++;
+				break;
 			}
 
 			if (!oldStyle) foreach (k; i .. j + 1)
@@ -154,13 +182,23 @@ void main(string[] args)
 					if (tokens[beforeEnd] == tok!".")
 						skipIdentifierList(beforeEnd);
 					break loop2;
+				case tok!"@":
+					beforeEnd++;
+					if (tokens[beforeEnd] == tok!"identifier")
+						beforeEnd++;
+					if (tokens[beforeEnd] == tok!"(")
+						skip!("(", ")")(beforeEnd);
+					skipWhitespace(beforeEnd, false);
+					break;
 				case tok!"const":
 				case tok!"immutable":
 				case tok!"inout":
 				case tok!"shared":
+				case tok!"extern":
 					beforeEnd++;
 					if (tokens[beforeEnd] == tok!"(")
 						skip!("(", ")")(beforeEnd);
+					skipWhitespace(beforeEnd, false);
 					break;
 				default:
 					break loop2;
@@ -231,5 +269,7 @@ void main(string[] args)
 			break;
 		}
 	}
+
+	return 0;
 }
 
