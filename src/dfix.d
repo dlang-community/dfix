@@ -125,19 +125,22 @@ int main(string[] args)
 			writeToken(i);
 			i++;
 			skipWhitespace(i);
-			while (true)
+			while (tokens[i] == tok!"stringLiteral")
 			{
-				if (tokens[i] == tok!"stringLiteral")
-				{
-					output.write("~ ");
-					writeToken(i);
-					i++;
-				}
-				else
-					break;
+				output.write("~ ");
+				writeToken(i);
+				i++;
 				skipWhitespace(i);
 			}
-			break;
+			if (i < tokens.length)
+				goto default;
+			else
+				break;
+		case tok!"override":
+		case tok!"final":
+		case tok!"deprecated":
+		case tok!"abstract":
+		case tok!"align":
 		case tok!"pure":
 		case tok!"nothrow":
 			if (!dip64)
