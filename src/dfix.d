@@ -4,9 +4,31 @@ import std.lexer;
 import std.d.lexer;
 import std.array;
 import std.stdio;
+import std.getopt;
 
 int main(string[] args)
 {
+	// http://wiki.dlang.org/DIP64
+	bool dip64;
+	// http://wiki.dlang.org/DIP65
+	bool dip65;
+
+	bool help;
+
+	try
+		getopt(args, "dip64", &dip64, "dip65", &dip65, "help|h", &help);
+	catch (Exception e)
+	{
+		stderr.writeln(e.msg);
+		return 1;
+	}
+
+	if (help)
+	{
+		printHelp();
+		return 0;
+	}
+
 	if (args.length < 2)
 	{
 		stderr.writeln("File path is a required argument");
@@ -87,6 +109,8 @@ int main(string[] args)
 		switch (tokens[i].type)
 		{
 		case tok!"catch":
+			if (!dip65)
+				break;
 			size_t j = i + 1;
 			while (j < tokens.length && (tokens[j] == tok!"whitespace" || tokens[j] == tok!"comment"))
 				j++;
@@ -97,6 +121,13 @@ int main(string[] args)
 			}
 			else
 				goto default;
+		case tok!"pure":
+		case tok!"nothrow":
+			if (!dip64)
+				break;
+			output.write("@");
+			output.write(str(tokens[i].type));
+			break;
 		case tok!"alias":
 			bool oldStyle = true;
 			writeToken(i); // alias
@@ -273,3 +304,24 @@ int main(string[] args)
 	return 0;
 }
 
+void printHelp()
+{
+	stdout.writeln(`
+Dfix automatically upgrades D source code to comply with new language changes.
+Files are modified in place, so have backup copies ready, or use a source
+control system.
+
+Usage:
+
+    dfix [Options] FILES
+
+Options:
+
+    --dip64
+        Rewrites attributes to be compliant with DIP64.
+    --dip65
+        Rewrites catch blocks to be compliant with DIP65.
+    --help -h
+        Prints this help message
+`);
+}
