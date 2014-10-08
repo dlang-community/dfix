@@ -121,6 +121,23 @@ int main(string[] args)
 			}
 			else
 				goto default;
+		case tok!"stringLiteral":
+			writeToken(i);
+			i++;
+			skipWhitespace(i);
+			while (true)
+			{
+				if (tokens[i] == tok!"stringLiteral")
+				{
+					output.write("~ ");
+					writeToken(i);
+					i++;
+				}
+				else
+					break;
+				skipWhitespace(i);
+			}
+			break;
 		case tok!"pure":
 		case tok!"nothrow":
 			if (!dip64)
