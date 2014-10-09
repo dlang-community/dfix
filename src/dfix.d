@@ -2,6 +2,8 @@ module dfix;
 
 import std.lexer;
 import std.d.lexer;
+import std.d.parser;
+import std.d.ast;
 import std.array;
 import std.stdio;
 import std.getopt;
@@ -344,4 +346,44 @@ Options:
     --help -h
         Prints this help message
 `);
+}
+
+/**
+ * The types of special token ranges identified by the parsing pass
+ */
+enum SpecialRangeType
+{
+	/// Function declarations such as "const int foo();"
+	functionAttributePrefix,
+	/// Variable and parameter declarations such as "int bar[]"
+	cStyleArray
+}
+
+/**
+ * Identifies ranges of tokens in the source tokens that need to be rewritten
+ */
+struct SpecialRange
+{
+	/// Range type
+	SpecialRangeType type;
+
+	/// Begin byte position (inclusive)
+	size_t begin;
+
+	/// End byte position (not inclusive)
+	size_t end;
+}
+
+class DFixVisitor : ASTVisitor
+{
+	// C-style arrays variables
+	override void visit(const VariableDeclaration varDec) {}
+
+	// C-style array parameters
+	override void visit(const Parameter param) {}
+
+	// Function declarations with attributes on the left side
+	override void visit(const Declaration dec) {}
+
+	alias visit = ASTVisitor.visit;
 }

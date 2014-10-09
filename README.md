@@ -6,7 +6,6 @@ Tool for automatically upggrading D source code
 
 * Updates old-style alias syntax to new-style
 * Fixes implicit concatenation of string literals
-* Replaces uses of the catch-all syntax with an explicit ```catch (Throwable)```
 * Upgrades code to comply with DIP64 when the ```--dip64``` switch is specified.
 * Upgrades code to comply with DIP65 when the ```--dip65``` switch is specified.
 
