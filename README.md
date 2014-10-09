@@ -12,6 +12,8 @@ Tool for automatically upggrading D source code
 ## Planned Features
 
 * Automatic conversion of C-style array declarations and parameters to D-style.
+* Movement of function attributes from the left side of the function name to the
+right.
 
 ## Notes
 
