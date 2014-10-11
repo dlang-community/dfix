@@ -1,0 +1,11 @@
+{
+	"name": "dfix",
+	"description": "Tool for automatically upgrading D source code",
+	"copyright": "© Brian Schott",
+	"authors": ["Brian Schott"],
+	"license" : "Boost Software License - Version 1.0",
+	"targetType": "executable",
+	"dependencies": {
+		"libdparse": ">=0.1.1"
+	},
+}
