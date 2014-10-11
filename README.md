@@ -6,12 +6,12 @@ Tool for automatically upggrading D source code
 
 * Updates old-style alias syntax to new-style
 * Fixes implicit concatenation of string literals
+* Automatic conversion of C-style array declarations and parameters to D-style.
 * Upgrades code to comply with DIP64 when the ```--dip64``` switch is specified.
 * Upgrades code to comply with DIP65 when the ```--dip65``` switch is specified.
 
 ## Planned Features
 
-* Automatic conversion of C-style array declarations and parameters to D-style.
 * Movement of function attributes from the left side of the function name to the
 right.
 
