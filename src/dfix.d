@@ -14,7 +14,7 @@ int main(string[] args)
 	// http://wiki.dlang.org/DIP64
 	bool dip64;
 	// http://wiki.dlang.org/DIP65
-	bool dip65;
+	bool dip65 = true;
 
 	bool help;
 
