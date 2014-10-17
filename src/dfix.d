@@ -236,7 +236,16 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 					goto case;
 				case tok!"identifier":
 					skipIdentifierList(output, tokens, beforeEnd);
-					break loop2;
+					if (beforeEnd < tokens.length && tokens[beforeEnd] == tok!"!")
+						beforeEnd++;
+					if (beforeEnd < tokens.length && tokens[beforeEnd] == tok!"(")
+						skip!("(", ")")(tokens, beforeEnd);
+					else
+						beforeEnd++;
+					if (beforeEnd < tokens.length && tokens[beforeEnd] == tok!".")
+						break;
+					else
+						break loop2;
 				case tok!"typeof":
 					beforeEnd++;
 					skip!("(", ")")(tokens, beforeEnd);
@@ -258,10 +267,14 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 				case tok!"shared":
 				case tok!"extern":
 					beforeEnd++;
+					skipWhitespace(output, tokens, beforeEnd, false);
 					if (tokens[beforeEnd] == tok!"(")
 						skip!("(", ")")(tokens, beforeEnd);
-					skipWhitespace(output, tokens, beforeEnd, false);
-					break;
+
+					if (beforeEnd >= tokens.length || tokens[beforeEnd] != tok!".")
+						break loop2;
+					else
+						break;
 				default:
 					break loop2;
 				}
