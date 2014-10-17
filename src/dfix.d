@@ -46,6 +46,9 @@ int main(string[] args)
 	return 0;
 }
 
+/**
+ * Prints help message
+ */
 void printHelp()
 {
 	stdout.writeln(`
@@ -60,14 +63,19 @@ Usage:
 Options:
 
     --dip64
-        Rewrites attributes to be compliant with DIP64.
+        Rewrites attributes to be compliant with DIP64. This defaults to
+        "false".
     --dip65
-        Rewrites catch blocks to be compliant with DIP65.
+        Rewrites catch blocks to be compliant with DIP65. This defaults to
+        "true". Use --dip65=false to disable this fix.
     --help -h
         Prints this help message
 `);
 }
 
+/**
+ * Fixes the given file.
+ */
 void upgradeFile(string fileName, bool dip64, bool dip65)
 {
 	import std.algorithm : filter;
@@ -235,23 +243,14 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 					beforeEnd++;
 					goto case;
 				case tok!"identifier":
-					skipIdentifierList(output, tokens, beforeEnd);
-					if (beforeEnd < tokens.length && tokens[beforeEnd] == tok!"!")
-						beforeEnd++;
-					if (beforeEnd < tokens.length && tokens[beforeEnd] == tok!"(")
-						skip!("(", ")")(tokens, beforeEnd);
-					else
-						beforeEnd++;
-					if (beforeEnd < tokens.length && tokens[beforeEnd] == tok!".")
-						break;
-					else
-						break loop2;
+					skipIdentifierChain(output, tokens, beforeEnd);
+					break loop2;
 				case tok!"typeof":
 					beforeEnd++;
 					skip!("(", ")")(tokens, beforeEnd);
 					skipWhitespace(output, tokens, beforeEnd, false);
 					if (tokens[beforeEnd] == tok!".")
-						skipIdentifierList(output, tokens, beforeEnd);
+						skipIdentifierChain(output, tokens, beforeEnd);
 					break loop2;
 				case tok!"@":
 					beforeEnd++;
@@ -270,7 +269,6 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 					skipWhitespace(output, tokens, beforeEnd, false);
 					if (tokens[beforeEnd] == tok!"(")
 						skip!("(", ")")(tokens, beforeEnd);
-
 					if (beforeEnd >= tokens.length || tokens[beforeEnd] != tok!".")
 						break loop2;
 					else
@@ -365,12 +363,18 @@ struct SpecialMarker
 	/// Range type
 	SpecialMarkerType type;
 
-	/// Begin byte position (inclusive)
+	/// Begin byte position (before relocateMarkers) or token index
+	/// (after relocateMarkers)
 	size_t index;
 
+	/// The type suffix AST nodes that should be moved
 	const(TypeSuffix[]) nodes;
 }
 
+/**
+ * Scans a module's parsed AST and looks for C-style array variables and
+ * parameters, storing the locations in the markers array.
+ */
 class DFixVisitor : ASTVisitor
 {
 	// C-style arrays variables
@@ -393,9 +397,14 @@ class DFixVisitor : ASTVisitor
 
 	alias visit = ASTVisitor.visit;
 
+	/// Parts of the source file identified as needing a rewrite
 	SpecialMarker[] markers;
 }
 
+/**
+ * Converts the marker index from a byte index into the source code to an index
+ * into the tokens array.
+ */
 void relocateMarkers(SpecialMarker[] markers, const(Token)[] tokens)
 {
 	foreach (ref marker; markers)
@@ -409,11 +418,18 @@ void relocateMarkers(SpecialMarker[] markers, const(Token)[] tokens)
 	}
 }
 
+/**
+ * Writes a token to the output file.
+ */
 void writeToken(File output, ref const(Token) token)
 {
 	output.write(token.text is null ? str(token.type) : token.text);
 }
 
+/**
+ * Skips balanced parens, braces, or brackets. index will be incremented to
+ * index tokens just after the balanced closing token.
+ */
 void skip(alias Open, alias Close)(const(Token)[] tokens, ref size_t index)
 {
 	int depth = 1;
@@ -426,6 +442,10 @@ void skip(alias Open, alias Close)(const(Token)[] tokens, ref size_t index)
 	}
 }
 
+/**
+ * Skips whitespace tokens, incrementing index until it indexes tokens at a
+ * non-whitespace token.
+ */
 void skipWhitespace(File output, const(Token)[] tokens, ref size_t index, bool print = true)
 {
 	while (index < tokens.length && (tokens[index] == tok!"whitespace" || tokens[index] == tok!"comment"))
@@ -434,7 +454,12 @@ void skipWhitespace(File output, const(Token)[] tokens, ref size_t index, bool p
 		index++;
 	}
 }
-void skipIdentifierList(File output, const(Token)[] tokens, ref size_t index)
+
+/**
+ * Advances index until it indexs the token just after an identifier or template
+ * chain.
+ */
+void skipIdentifierChain(File output, const(Token)[] tokens, ref size_t index)
 {
 	loop: while (index < tokens.length) switch (tokens[index].type)
 	{
@@ -448,15 +473,21 @@ void skipIdentifierList(File output, const(Token)[] tokens, ref size_t index)
 		skipWhitespace(output, tokens, i, false);
 		if (tokens[i] == tok!"!")
 		{
-			index = i + 1;
+			i++;
+			index++;
 			skipWhitespace(output, tokens, i, false);
 			if (tokens[i] == tok!"(")
 			{
+				skip!("(", ")")(tokens, i);
 				index = i;
-				skip!("(", ")")(tokens, index);
+			}
+			else
+			{
+				i++;
+				index++;
 			}
 		}
-		if (tokens[index] != tok!".")
+		if (tokens[i] != tok!".")
 			break loop;
 		break;
 	default:
@@ -464,5 +495,7 @@ void skipIdentifierList(File output, const(Token)[] tokens, ref size_t index)
 	}
 }
 
-
+/**
+ * Dummy message output function for the lexer/parser
+ */
 void doesNothing(string, size_t, size_t, string, bool) {}
