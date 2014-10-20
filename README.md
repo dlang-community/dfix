@@ -1,6 +1,6 @@
 # dfix
 
-Tool for automatically upggrading D source code
+Tool for automatically upgrading D source code
 
 ## Features
 
