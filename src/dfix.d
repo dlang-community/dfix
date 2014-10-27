@@ -297,6 +297,7 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 				case tok!"function":
 				case tok!"delegate":
 					beforeEnd++;
+					skipWhitespace(output, tokens, beforeEnd, false);
 					skip!("(", ")")(tokens, beforeEnd);
 					loop4: while (beforeEnd < tokens.length) switch (tokens[beforeEnd].type)
 					{
@@ -311,6 +312,7 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 						break;
 					case tok!"@":
 						beforeEnd++;
+						skipWhitespace(output, tokens, beforeEnd, false);
 						if (tokens[beforeEnd] == tok!"(")
 						{
 							skip!("(", ")")(tokens, beforeEnd);
@@ -318,6 +320,7 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 						else
 						{
 							beforeEnd++; // identifier
+							skipWhitespace(output, tokens, beforeEnd, false);
 							if (tokens[beforeEnd] == tok!"(")
 								skip!("(", ")")(tokens, beforeEnd);
 						}

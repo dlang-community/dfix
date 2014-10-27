@@ -25,3 +25,12 @@ alias Tst!"Test" Mod;
 alias Tst!"Test2" Mod2;
 
 alias immutable(int) IInt;
+
+alias LRESULT function (HWND, UINT, WPARAM, LPARAM) WNDPROC;
+alias UINT function (HWND, UINT, WPARAM, LPARAM) LPOFNHOOKPROC;
+alias EXCEPTION_DISPOSITION function (
+	EXCEPTION_RECORD *exceptionRecord,
+	DEstablisherFrame *frame,
+	CONTEXT *context,
+	void *dispatcherContext) LanguageSpecificHandler;
+private extern (D) alias void function (Object) fp_t;
