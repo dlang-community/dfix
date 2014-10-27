@@ -127,6 +127,9 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 
 		switch (tokens[i].type)
 		{
+		case tok!"asm":
+			skipAsmBlock(output, tokens, i);
+			goto default;
 		case tok!"catch":
 			if (!dip65)
 				goto default;
@@ -492,6 +495,28 @@ void skipIdentifierChain(File output, const(Token)[] tokens, ref size_t index)
 		break;
 	default:
 		break loop;
+	}
+}
+
+/**
+ * Skips over (and prints) an asm block
+ */
+void skipAsmBlock(File output, const(Token)[] tokens, ref size_t i)
+{
+	import std.exception : enforce;
+
+	output.write("asm");
+	i++; // asm
+	skipWhitespace(output, tokens, i);
+	enforce(tokens[i].type == tok!"{");
+	output.write("{");
+	i++; // {
+	int depth = 1;
+	while (depth > 0 && i < tokens.length) switch (tokens[i].type)
+	{
+	case tok!"{": depth++; goto default;
+	case tok!"}": depth--; goto default;
+	default: writeToken(output, tokens[i]); i++; break;
 	}
 }
 

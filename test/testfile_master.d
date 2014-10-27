@@ -3,6 +3,11 @@ pure nothrow void doStuff(int x[]) {
 		whatever();
 	catch
 		somethingElse();
+	asm
+	{
+		mov sp[EBP], ESP;
+		inc _iSemlockCtrs[EDX * 2];
+	}
 }
 
 int someMapping[string];
