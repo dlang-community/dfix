@@ -171,6 +171,7 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 			output.write(str(tokens[i].type));
 			break;
 		case tok!"alias":
+			bool multipleAliases = false;
 			bool oldStyle = true;
 			output.writeToken(tokens[i]); // alias
 				i++;
@@ -196,6 +197,11 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 			case tok!"this":
 				j++;
 				oldStyle = false;
+				break;
+			case tok!",":
+				j++;
+				if (depth == 0)
+					multipleAliases = true;
 				break;
 			case tok!";":
 				break loop;
@@ -303,11 +309,25 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 				{
 				case tok!"*":
 					beforeEnd++;
-					skipWhitespace(output, tokens, beforeEnd, false);
+					size_t m = beforeEnd;
+					skipWhitespace(output, tokens, m, false);
+					if (m < tokens.length && (tokens[m] == tok!"*"
+						|| tokens[m] == tok!"[" || tokens[m] == tok!"function"
+						|| tokens[m] == tok!"delegate"))
+					{
+						beforeEnd = m;
+					}
 					break;
 				case tok!"[":
 					skip!("[", "]")(tokens, beforeEnd);
-					skipWhitespace(output, tokens, beforeEnd, false);
+					size_t m = beforeEnd;
+					skipWhitespace(output, tokens, m, false);
+					if (m < tokens.length && (tokens[m] == tok!"*"
+						|| tokens[m] == tok!"[" || tokens[m] == tok!"function"
+						|| tokens[m] == tok!"delegate"))
+					{
+						beforeEnd = m;
+					}
 					break;
 				case tok!"function":
 				case tok!"delegate":
@@ -368,6 +388,22 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 				output.write(" = ");
 				foreach (l; beforeStart .. beforeEnd)
 					output.writeToken(tokens[l]);
+
+				if (multipleAliases)
+				{
+					i++;
+					skipWhitespace(output, tokens, i, false);
+					while (tokens[i] == tok!",")
+					{
+						i++; // ,
+						output.write(", ");
+						skipWhitespace(output, tokens, i, false);
+						output.writeToken(tokens[i]);
+						output.write(" = ");
+						foreach (l; beforeStart .. beforeEnd)
+							output.writeToken(tokens[l]);
+					}
+				}
 			}
 			break;
 		default:

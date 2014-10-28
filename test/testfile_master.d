@@ -48,3 +48,7 @@ alias extern(C) void function() externCVoidFunc;
 alias void delegate(void*, void*) nothrow ScanAllThreadsFn; /// The scanning function.
 alias void delegate(ScanType, void*, void*) nothrow ScanAllThreadsTypeFn; /// ditto
 alias void* function() gcGetFn;
+
+alias CONTEXT* PCONTEXT, LPCONTEXT;
+alias EXCEPTION_RECORD* PEXCEPTION_RECORD, LPEXCEPTION_RECORD;
+alias EXCEPTION_POINTERS* PEXCEPTION_POINTERS, LPEXCEPTION_POINTERS;
