@@ -23,4 +23,4 @@ clean:
 test: dfix_binary
 	cp test/testfile_master.d test/testfile.d
 	./bin/dfix test/testfile.d
-	cat test/testfile.d
+	diff test/testfile.d test/testfile_expected.d

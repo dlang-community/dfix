@@ -263,19 +263,28 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 						skip!("(", ")")(tokens, beforeEnd);
 					skipWhitespace(output, tokens, beforeEnd, false);
 					break;
+				case tok!"static":
 				case tok!"const":
 				case tok!"immutable":
 				case tok!"inout":
 				case tok!"shared":
 				case tok!"extern":
+				case tok!"nothrow":
+				case tok!"pure":
+				case tok!"__vector":
 					beforeEnd++;
 					skipWhitespace(output, tokens, beforeEnd, false);
 					if (tokens[beforeEnd] == tok!"(")
 						skip!("(", ")")(tokens, beforeEnd);
-					if (beforeEnd >= tokens.length || tokens[beforeEnd] != tok!".")
+					if (beforeEnd >= tokens.length)
+						break loop2;
+					size_t k = beforeEnd;
+					skipWhitespace(output, tokens, k, false);
+					if (k + 1 < tokens.length && tokens[k + 1].type == tok!";")
 						break loop2;
 					else
-						break;
+						beforeEnd = k;
+					break;
 				default:
 					break loop2;
 				}
@@ -292,14 +301,22 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 
 				loop3: while (beforeEnd < tokens.length) switch (tokens[beforeEnd].type)
 				{
-				case tok!"*": beforeEnd++; break;
-				case tok!"[": skip!("[", "]")(tokens, beforeEnd); break;
+				case tok!"*":
+					beforeEnd++;
+					skipWhitespace(output, tokens, beforeEnd, false);
+					break;
+				case tok!"[":
+					skip!("[", "]")(tokens, beforeEnd);
+					skipWhitespace(output, tokens, beforeEnd, false);
+					break;
 				case tok!"function":
 				case tok!"delegate":
 					beforeEnd++;
 					skipWhitespace(output, tokens, beforeEnd, false);
 					skip!("(", ")")(tokens, beforeEnd);
-					loop4: while (beforeEnd < tokens.length) switch (tokens[beforeEnd].type)
+					size_t l = beforeEnd;
+					skipWhitespace(output, tokens, l, false);
+					loop4: while (l < tokens.length) switch (tokens[l].type)
 					{
 					case tok!"const":
 					case tok!"nothrow":
@@ -307,16 +324,20 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 					case tok!"immutable":
 					case tok!"inout":
 					case tok!"shared":
-						beforeEnd++;
-						skipWhitespace(output, tokens, beforeEnd, false);
+						beforeEnd = l + 1;
+						l = beforeEnd;
+						skipWhitespace(output, tokens, l, false);
+						if (l < tokens.length && tokens[l].type == tok!"identifier")
+						{
+							beforeEnd = l - 1;
+							break loop4;
+						}
 						break;
 					case tok!"@":
-						beforeEnd++;
+						beforeEnd = l + 1;
 						skipWhitespace(output, tokens, beforeEnd, false);
 						if (tokens[beforeEnd] == tok!"(")
-						{
 							skip!("(", ")")(tokens, beforeEnd);
-						}
 						else
 						{
 							beforeEnd++; // identifier
@@ -324,7 +345,13 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 							if (tokens[beforeEnd] == tok!"(")
 								skip!("(", ")")(tokens, beforeEnd);
 						}
-						skipWhitespace(output, tokens, beforeEnd, false);
+						l = beforeEnd;
+						skipWhitespace(output, tokens, l, false);
+						if (l < tokens.length && tokens[l].type == tok!"identifier")
+						{
+							beforeEnd = l - 1;
+							break loop4;
+						}
 						break;
 					default:
 						break loop4;

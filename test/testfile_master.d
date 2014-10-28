@@ -34,3 +34,17 @@ alias EXCEPTION_DISPOSITION function (
 	CONTEXT *context,
 	void *dispatcherContext) LanguageSpecificHandler;
 private extern (D) alias void function (Object) fp_t;
+
+alias static immutable(OpInfo) Opcode;
+alias extern (C) void function() EntryFn;
+
+alias __vector(T) Vector;
+
+
+alias extern(C) RT function(P) nothrow @nogc __externC;
+
+private alias extern(C) int function(dl_phdr_info*, size_t, void*) __dl_iterate_hdr_callback;
+alias extern(C) void function() externCVoidFunc;
+alias void delegate(void*, void*) nothrow ScanAllThreadsFn; /// The scanning function.
+alias void delegate(ScanType, void*, void*) nothrow ScanAllThreadsTypeFn; /// ditto
+alias void* function() gcGetFn;
