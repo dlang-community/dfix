@@ -7,8 +7,8 @@ Tool for automatically upgrading D source code
 * Updates old-style alias syntax to new-style
 * Fixes implicit concatenation of string literals
 * Automatic conversion of C-style array declarations and parameters to D-style.
-* Upgrades code to comply with DIP64 when the ```--dip64``` switch is specified.
-* Upgrades code to comply with DIP65 when the ```--dip65``` switch is specified.
+* Upgrades code to comply with DIP64 when the ```--dip64``` switch is specified. (Not recommended)
+* Upgrades code to comply with DIP65 unless the ```--dip65=false``` switch is specified.
 
 ## Planned Features
 
