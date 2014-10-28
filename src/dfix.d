@@ -144,6 +144,16 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 			else
 				goto default;
 		case tok!"stringLiteral":
+			size_t stringBookmark = i;
+			while (tokens[i] == tok!"stringLiteral")
+			{
+				i++;
+				skipWhitespace(output, tokens, i, false);
+			}
+			bool parensNeeded = tokens[i] == tok!".";
+			i = stringBookmark;
+			if (parensNeeded)
+				output.write("(");
 			output.writeToken(tokens[i]);
 			i++;
 			skipWhitespace(output, tokens, i);
@@ -154,6 +164,8 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 				i++;
 				skipWhitespace(output, tokens, i);
 			}
+			if (parensNeeded)
+				output.write(")");
 			if (i < tokens.length)
 				goto default;
 			else
