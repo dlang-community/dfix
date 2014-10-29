@@ -24,3 +24,6 @@ test: dfix_binary
 	cp test/testfile_master.d test/testfile.d
 	./bin/dfix test/testfile.d
 	diff test/testfile.d test/testfile_expected.d
+	# Make sure that running dfix on the output of dfix changes nothing.
+	./bin/dfix test/testfile.d
+	diff test/testfile.d test/testfile_expected.d
