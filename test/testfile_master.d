@@ -3,7 +3,7 @@ pure nothrow void doStuff(int x[]) {
 		whatever();
 	catch
 		somethingElse();
-	asm
+	asm pure
 	{
 		mov sp[EBP], ESP;
 		inc _iSemlockCtrs[EDX * 2];
