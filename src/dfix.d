@@ -106,22 +106,39 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 
 	for (size_t i = 0; i < tokens.length; i++)
 	{
-		if (markers.length > 0 && i == markers[0].index)
+		if (markers.length > 0)
 		{
-			formatter.sink = output.lockingTextWriter();
-			foreach (node; markers[0].nodes)
-				formatter.format(node);
-			formatter.sink = File.LockingTextWriter.init;
-			markers = markers[1 .. $];
-			skipWhitespace(output, tokens, i);
-			writeToken(output, tokens[i]);
-			i++;
-			suffixLoop: while (i < tokens.length) switch (tokens[i].type)
+			with (SpecialMarkerType) final switch (markers[0].type)
 			{
-				case tok!"(": skip!("(", ")")(tokens, i); break;
-				case tok!"[": skip!("[", "]")(tokens, i); break;
-				case tok!"*": i++; break;
-				default: break suffixLoop;
+			case bodyEnd:
+				if (tokens[i].index != markers[0].index)
+					break;
+				writeToken(output, tokens[i]);
+				i++;
+				if (i < tokens.length && tokens[i] == tok!";")
+					i++;
+				markers = markers[1 .. $];
+				break;
+			case cStyleArray:
+			case functionAttributePrefix:
+				if (i != markers[0].index)
+					break;
+				formatter.sink = output.lockingTextWriter();
+				foreach (node; markers[0].nodes)
+					formatter.format(node);
+				formatter.sink = File.LockingTextWriter.init;
+				markers = markers[1 .. $];
+				skipWhitespace(output, tokens, i);
+				writeToken(output, tokens[i]);
+				i++;
+				suffixLoop: while (i < tokens.length) switch (tokens[i].type)
+				{
+					case tok!"(": skip!("(", ")")(tokens, i); break;
+					case tok!"[": skip!("[", "]")(tokens, i); break;
+					case tok!"*": i++; break;
+					default: break suffixLoop;
+				}
+				break;
 			}
 		}
 
@@ -433,7 +450,10 @@ enum SpecialMarkerType
 	/// Function declarations such as "const int foo();"
 	functionAttributePrefix,
 	/// Variable and parameter declarations such as "int bar[]"
-	cStyleArray
+	cStyleArray,
+	/// The location of a closing brace for an interface, class, struct, union,
+	/// or enum.
+	bodyEnd
 }
 
 /**
@@ -474,6 +494,20 @@ class DFixVisitor : ASTVisitor
 			return;
 		markers ~= SpecialMarker(SpecialMarkerType.cStyleArray, param.name.index,
 			param.cstyle);
+	}
+
+	// interface, union, class, struct body closing braces
+	override void visit(const StructBody structBody)
+	{
+		markers ~= SpecialMarker(SpecialMarkerType.bodyEnd, structBody.endLocation,
+			null);
+	}
+
+	// enum body closing braces
+	override void visit(const EnumBody enumBody)
+	{
+		markers ~= SpecialMarker(SpecialMarkerType.bodyEnd, enumBody.endLocation,
+			null);
 	}
 
 	alias visit = ASTVisitor.visit;
@@ -602,9 +636,9 @@ void skipAttribute(File output, const(Token)[] tokens, ref size_t i)
 			i++;
 			while (i < tokens.length && depth > 0) switch (tokens[i].type)
 			{
-			case tok!"(": depth++;  output.writeToken(tokens[i]); i++; break;
+			case tok!"(": depth++; output.writeToken(tokens[i]); i++; break;
 			case tok!")": depth--; output.writeToken(tokens[i]); i++; break;
-			default:                 output.writeToken(tokens[i]); i++; break;
+			default:               output.writeToken(tokens[i]); i++; break;
 			}
 		default:
 			break;

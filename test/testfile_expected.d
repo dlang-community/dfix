@@ -54,3 +54,6 @@ alias PEXCEPTION_RECORD = EXCEPTION_RECORD*, LPEXCEPTION_RECORD = EXCEPTION_RECO
 alias PEXCEPTION_POINTERS = EXCEPTION_POINTERS*, LPEXCEPTION_POINTERS = EXCEPTION_POINTERS*;
 
 void foo() { ("abc%s" ~ "def%s").format("123", "456"); }
+
+enum SomeEnum { a, b }
+struct SomeStruct { int a; }
