@@ -53,7 +53,7 @@ int main(string[] args)
 	}
 
 	foreach (f; parallel(files))
-		upgradeFile(arg, dip64, dip65);
+		upgradeFile(f, dip64, dip65);
 
 	return 0;
 }
@@ -70,7 +70,7 @@ control system.
 
 Usage:
 
-    dfix [Options] FILES
+    dfix [Options] FILES DIRECTORIES
 
 Options:
 
@@ -90,9 +90,10 @@ Options:
  */
 void upgradeFile(string fileName, bool dip64, bool dip65)
 {
-	import std.algorithm : filter;
+	import std.algorithm : filter, canFind;
 	import std.array : array, uninitializedArray;
 	import std.d.formatter : Formatter;
+	import std.exception:enforce;
 
 	File input = File(fileName, "rb");
 	ubyte[] inputBytes = uninitializedArray!(ubyte[])(input.size);
@@ -118,28 +119,73 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 
 	for (size_t i = 0; i < tokens.length; i++)
 	{
-		if (markers.length > 0)
+		markerLoop: foreach (marker; markers)
 		{
-			with (SpecialMarkerType) final switch (markers[0].type)
+			with (SpecialMarkerType) final switch (marker.type)
 			{
 			case bodyEnd:
-				if (tokens[i].index != markers[0].index)
+				if (tokens[i].index != marker.index)
 					break;
+				assert (tokens[i].type == tok!"}");
 				writeToken(output, tokens[i]);
 				i++;
 				if (i < tokens.length && tokens[i] == tok!";")
 					i++;
 				markers = markers[1 .. $];
-				break;
-			case cStyleArray:
+				break markerLoop;
 			case functionAttributePrefix:
-				if (i != markers[0].index)
+				if (tokens[i].index != marker.index)
+					break;
+				// skip over token to be moved
+				i++;
+				skipWhitespace(output, tokens, i, false);
+
+				// skip over function return type
+				if (isBasicType(tokens[i].type))
+				{
+					writeToken(output, tokens[i]);
+					i++;
+				}
+				else
+					skipIdentifierChain(output, tokens, i, true);
+				skipWhitespace(output, tokens, i);
+
+				// skip over function name
+				skipIdentifierChain(output, tokens, i, true);
+
+				// skip first paramters
+				skipAndWrite!("(", ")")(output, tokens, i);
+				auto bookmark = i;
+				skipWhitespace(output, tokens, i, false);
+
+				// If there is a second set of parameters, go back to the bookmark
+				// and print out the whitespace
+				if (tokens[i] == tok!"(")
+				{
+					i = bookmark;
+					skipWhitespace(output, tokens, i);
+					skipAndWrite!("(", ")")(output, tokens, i);
+					skipWhitespace(output, tokens, i, false);
+				}
+				else
+					i = bookmark;
+
+				// write out the attribute being moved
+				output.write(" ", marker.functionAttribute);
+
+				// if there was no whitespace, add it after the moved attribute
+				if (tokens[i] != tok!"whitespace")
+					output.write(" ");
+
+				markers = markers[1 .. $];
+				break markerLoop;
+			case cStyleArray:
+				if (i != marker.index)
 					break;
 				formatter.sink = output.lockingTextWriter();
-				foreach (node; markers[0].nodes)
+				foreach (node; marker.nodes)
 					formatter.format(node);
 				formatter.sink = File.LockingTextWriter.init;
-				markers = markers[1 .. $];
 				skipWhitespace(output, tokens, i);
 				writeToken(output, tokens[i]);
 				i++;
@@ -150,7 +196,8 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 					case tok!"*": i++; break;
 					default: break suffixLoop;
 				}
-				break;
+				markers = markers[1 .. $];
+				break markerLoop;
 			}
 		}
 
@@ -482,6 +529,9 @@ struct SpecialMarker
 
 	/// The type suffix AST nodes that should be moved
 	const(TypeSuffix[]) nodes;
+
+	/// The function attribute such as const, immutable, or inout to move
+	string functionAttribute;
 }
 
 /**
@@ -502,24 +552,47 @@ class DFixVisitor : ASTVisitor
 	// C-style array parameters
 	override void visit(const Parameter param)
 	{
-		if (param.cstyle.length == 0)
-			return;
-		markers ~= SpecialMarker(SpecialMarkerType.cStyleArray, param.name.index,
-			param.cstyle);
+		if (param.cstyle.length > 0)
+			markers ~= SpecialMarker(SpecialMarkerType.cStyleArray, param.name.index,
+				param.cstyle);
+		param.accept(this);
 	}
 
 	// interface, union, class, struct body closing braces
 	override void visit(const StructBody structBody)
 	{
-		markers ~= SpecialMarker(SpecialMarkerType.bodyEnd, structBody.endLocation,
-			null);
+		structBody.accept(this);
+		markers ~= SpecialMarker(SpecialMarkerType.bodyEnd, structBody.endLocation);
 	}
 
 	// enum body closing braces
 	override void visit(const EnumBody enumBody)
 	{
-		markers ~= SpecialMarker(SpecialMarkerType.bodyEnd, enumBody.endLocation,
-			null);
+		markers ~= SpecialMarker(SpecialMarkerType.bodyEnd, enumBody.endLocation);
+		enumBody.accept(this);
+	}
+
+	// Confusing placement of function attributes
+	override void visit(const Declaration dec)
+	{
+		if (dec.functionDeclaration is null)
+			goto end;
+		if (dec.attributes.length == 0)
+			goto end;
+		foreach (attr; dec.attributes)
+		{
+			if (attr.storageClass is null)
+				continue;
+			if (attr.storageClass.token == tok!"const"
+				|| attr.storageClass.token == tok!"inout"
+				|| attr.storageClass.token == tok!"immutable")
+			{
+				markers ~= SpecialMarker(SpecialMarkerType.functionAttributePrefix,
+					attr.storageClass.token.index, null, str(attr.storageClass.token.type));
+			}
+		}
+	end:
+		dec.accept(this);
 	}
 
 	alias visit = ASTVisitor.visit;
@@ -551,6 +624,19 @@ void relocateMarkers(SpecialMarker[] markers, const(Token)[] tokens)
 void writeToken(File output, ref const(Token) token)
 {
 	output.write(token.text is null ? str(token.type) : token.text);
+}
+
+void skipAndWrite(alias Open, alias Close)(File output, const(Token)[] tokens, ref size_t index)
+{
+	int depth = 1;
+	writeToken(output, tokens[index]);
+	index++;
+	while (index < tokens.length && depth > 0) switch (tokens[index].type)
+	{
+	case tok!Open: depth++;  writeToken(output, tokens[index]); index++; break;
+	case tok!Close: depth--; writeToken(output, tokens[index]); index++; break;
+	default:                 writeToken(output, tokens[index]); index++; break;
+	}
 }
 
 /**
@@ -586,31 +672,42 @@ void skipWhitespace(File output, const(Token)[] tokens, ref size_t index, bool p
  * Advances index until it indexs the token just after an identifier or template
  * chain.
  */
-void skipIdentifierChain(File output, const(Token)[] tokens, ref size_t index)
+void skipIdentifierChain(File output, const(Token)[] tokens, ref size_t index, bool print = false)
 {
 	loop: while (index < tokens.length) switch (tokens[index].type)
 	{
 	case tok!".":
+		if (print)
+			writeToken(output, tokens[index]);
 		index++;
 		skipWhitespace(output, tokens, index, false);
 		break;
 	case tok!"identifier":
+		if (print)
+			writeToken(output, tokens[index]);
 		index++;
 		size_t i = index;
 		skipWhitespace(output, tokens, i, false);
 		if (tokens[i] == tok!"!")
 		{
 			i++;
+			if (print)
+				writeToken(output, tokens[index]);
 			index++;
 			skipWhitespace(output, tokens, i, false);
 			if (tokens[i] == tok!"(")
 			{
-				skip!("(", ")")(tokens, i);
+				if (print)
+					skipAndWrite!("(", ")")(output, tokens, i);
+				else
+					skip!("(", ")")(tokens, i);
 				index = i;
 			}
 			else
 			{
 				i++;
+				if (print)
+					writeToken(output, tokens[index]);
 				index++;
 			}
 		}
@@ -652,6 +749,7 @@ void skipAttribute(File output, const(Token)[] tokens, ref size_t i)
 			case tok!")": depth--; output.writeToken(tokens[i]); i++; break;
 			default:               output.writeToken(tokens[i]); i++; break;
 			}
+			break;
 		default:
 			break;
 		}

@@ -57,3 +57,14 @@ void foo() { "abc%s" "def%s".format("123", "456"); }
 
 enum SomeEnum { a, b };
 struct SomeStruct { int a; };
+
+struct MisplacedAttribute
+{
+	const int aFunction() nothrow { return 1; }
+	const int bFunction(T)() { return 1; }
+	const int cFunction(){ return 1; }
+	const int dFunction()
+	{
+		return 1;
+	}
+}
