@@ -53,7 +53,13 @@ int main(string[] args)
 	}
 
 	foreach (f; parallel(files))
-		upgradeFile(f, dip64, dip65);
+	{
+		try
+			upgradeFile(f, dip64, dip65);
+		catch (Throwable th)
+			stderr.writeln("Failed to upgrade ", f, ":(", th.file, ":", th.line, ") ", th.msg);
+	}
+
 
 	return 0;
 }
@@ -126,7 +132,7 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 			case bodyEnd:
 				if (tokens[i].index != marker.index)
 					break;
-				assert (tokens[i].type == tok!"}");
+				assert (tokens[i].type == tok!"}", format("%d %s", tokens[i].line, str(tokens[i].type)));
 				writeToken(output, tokens[i]);
 				i++;
 				if (i < tokens.length && tokens[i] == tok!";")
@@ -200,6 +206,9 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 				break markerLoop;
 			}
 		}
+
+		if (i >= tokens.length)
+			break;
 
 		switch (tokens[i].type)
 		{
@@ -568,8 +577,11 @@ class DFixVisitor : ASTVisitor
 	// enum body closing braces
 	override void visit(const EnumBody enumBody)
 	{
-		markers ~= SpecialMarker(SpecialMarkerType.bodyEnd, enumBody.endLocation);
 		enumBody.accept(this);
+		// skip over enums whose body is a single semicolon
+		if (enumBody.endLocation == 0 && enumBody.startLocation == 0)
+			return;
+		markers ~= SpecialMarker(SpecialMarkerType.bodyEnd, enumBody.endLocation);
 	}
 
 	// Confusing placement of function attributes
