@@ -5,6 +5,7 @@ import std.d.lexer;
 import std.d.parser;
 import std.d.ast;
 import std.stdio;
+import std.file;
 
 int main(string[] args)
 {
@@ -38,10 +39,21 @@ int main(string[] args)
 		return 1;
 	}
 
-	foreach (sourceFile; parallel(args[1 .. $]))
+	string[] files;
+
+	foreach (arg; args[1 .. $])
 	{
-		upgradeFile(sourceFile, dip64, dip65);
+		if (isDir(arg))
+		{
+			foreach (f; dirEntries(arg, "*.{d,di}", SpanMode.depth))
+				files ~= f;
+		}
+		else
+			files ~= arg;
 	}
+
+	foreach (f; parallel(files))
+		upgradeFile(arg, dip64, dip65);
 
 	return 0;
 }
