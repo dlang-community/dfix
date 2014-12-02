@@ -11,11 +11,6 @@ Tool for automatically upgrading D source code
 * Upgrades code to comply with DIP65 unless the ```--dip65=false``` switch is specified.
 * Rewrites functions declared ```const```, ```immutable``` and ```inout``` to be more clear by moving these keywords from the left side of the return type to the right side of the parameter list.
 
-## Planned Features
-
-* Movement of function attributes from the left side of the function name to the
-right.
-
 ## Notes
 
 dfix will edit your files in-place. Do not use dfix on files that have no
