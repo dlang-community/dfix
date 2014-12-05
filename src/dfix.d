@@ -229,13 +229,13 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 			else
 				goto default;
 		case tok!"stringLiteral":
-			size_t stringBookmark = i;
+			immutable size_t stringBookmark = i;
 			while (tokens[i] == tok!"stringLiteral")
 			{
 				i++;
 				skipWhitespace(output, tokens, i, false);
 			}
-			bool parensNeeded = tokens[i] == tok!".";
+			immutable bool parensNeeded = stringBookmark + 1 != i && tokens[i] == tok!".";
 			i = stringBookmark;
 			if (parensNeeded)
 				output.write("(");
