@@ -9,11 +9,7 @@ Tool for automatically upgrading D source code
 * Automatic conversion of C-style array declarations and parameters to D-style.
 * Upgrades code to comply with DIP64 when the ```--dip64``` switch is specified. (Not recommended)
 * Upgrades code to comply with DIP65 unless the ```--dip65=false``` switch is specified.
-
-## Planned Features
-
-* Movement of function attributes from the left side of the function name to the
-right.
+* Rewrites functions declared ```const```, ```immutable``` and ```inout``` to be more clear by moving these keywords from the left side of the return type to the right side of the parameter list.
 
 ## Notes
 
