@@ -56,10 +56,9 @@ int main(string[] args)
 	{
 		try
 			upgradeFile(f, dip64, dip65);
-		catch (Throwable th)
-			stderr.writeln("Failed to upgrade ", f, ":(", th.file, ":", th.line, ") ", th.msg);
+		catch (Exception e)
+			stderr.writeln("Failed to upgrade ", f, ":(", e.file, ":", e.line, ") ", e.msg);
 	}
-
 
 	return 0;
 }
@@ -71,7 +70,7 @@ void printHelp()
 {
 	stdout.writeln(`
 Dfix automatically upgrades D source code to comply with new language changes.
-Files are modified in place, so have backup copies ready, or use a source
+Files are modified in place, so have backup copies ready or use a source
 control system.
 
 Usage:
@@ -82,7 +81,8 @@ Options:
 
     --dip64
         Rewrites attributes to be compliant with DIP64. This defaults to
-        "false".
+        "false". Do not use this feature if you want your code to compile.
+		It exists as a proof-of-concept for enabling DIP64.
     --dip65
         Rewrites catch blocks to be compliant with DIP65. This defaults to
         "true". Use --dip65=false to disable this fix.
@@ -161,7 +161,7 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 
 				// skip first paramters
 				skipAndWrite!("(", ")")(output, tokens, i);
-				auto bookmark = i;
+				immutable bookmark = i;
 				skipWhitespace(output, tokens, i, false);
 
 				// If there is a second set of parameters, go back to the bookmark
@@ -197,7 +197,7 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 				i++;
 				suffixLoop: while (i < tokens.length) switch (tokens[i].type)
 				{
-					case tok!"(": skip!("(", ")")(tokens, i); break;
+					case tok!"(": skipAndWrite!("(", ")")(output, tokens, i); break;
 					case tok!"[": skip!("[", "]")(tokens, i); break;
 					case tok!"*": i++; break;
 					default: break suffixLoop;
@@ -593,14 +593,14 @@ class DFixVisitor : ASTVisitor
 			goto end;
 		foreach (attr; dec.attributes)
 		{
-			if (attr.storageClass is null)
+			if (attr.attribute == tok!"")
 				continue;
-			if (attr.storageClass.token == tok!"const"
-				|| attr.storageClass.token == tok!"inout"
-				|| attr.storageClass.token == tok!"immutable")
+			if (attr.attribute == tok!"const"
+				|| attr.attribute == tok!"inout"
+				|| attr.attribute == tok!"immutable")
 			{
 				markers ~= SpecialMarker(SpecialMarkerType.functionAttributePrefix,
-					attr.storageClass.token.index, null, str(attr.storageClass.token.type));
+					attr.attribute.index, null, str(attr.attribute.type));
 			}
 		}
 	end:
@@ -617,7 +617,7 @@ class DFixVisitor : ASTVisitor
  * Converts the marker index from a byte index into the source code to an index
  * into the tokens array.
  */
-void relocateMarkers(SpecialMarker[] markers, const(Token)[] tokens)
+void relocateMarkers(SpecialMarker[] markers, const(Token)[] tokens) pure nothrow @nogc
 {
 	foreach (ref marker; markers)
 	{

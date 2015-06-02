@@ -69,3 +69,5 @@ struct MisplacedAttribute
 		return 1;
 	}
 }
+
+enum bool isSome(T) = is(T == int);

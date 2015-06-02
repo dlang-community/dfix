@@ -1,5 +1,5 @@
 FLAGS = -Ilibdparse/src/\
-	-w\
+	-wi\
 	-g\
 	-ofbin/dfix
 
