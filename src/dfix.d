@@ -102,7 +102,7 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 	import std.exception:enforce;
 
 	File input = File(fileName, "rb");
-	ubyte[] inputBytes = uninitializedArray!(ubyte[])(cast(ulong) input.size);
+	ubyte[] inputBytes = uninitializedArray!(ubyte[])(cast(size_t) input.size);
 	input.rawRead(inputBytes);
 	input.close();
 	File output = File(fileName, "wb");
@@ -271,7 +271,7 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 			bool multipleAliases = false;
 			bool oldStyle = true;
 			output.writeToken(tokens[i]); // alias
-			i++;
+				i++;
 			size_t j = i + 1;
 
 			int depth;
@@ -593,11 +593,14 @@ class DFixVisitor : ASTVisitor
 			goto end;
 		foreach (attr; dec.attributes)
 		{
-			if (attr.attribute == tok!"const" || attr.attribute == tok!"inout"
-				|| attr.attribute == tok!"immutable")
+			if (attr.storageClass is null)
+				continue;
+			if (attr.storageClass.token == tok!"const"
+				|| attr.storageClass.token == tok!"inout"
+				|| attr.storageClass.token == tok!"immutable")
 			{
 				markers ~= SpecialMarker(SpecialMarkerType.functionAttributePrefix,
-					attr.attribute.index, null, str(attr.attribute.type));
+					attr.storageClass.token.index, null, str(attr.storageClass.token.type));
 			}
 		}
 	end:
