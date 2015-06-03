@@ -97,6 +97,7 @@ Options:
 void upgradeFile(string fileName, bool dip64, bool dip65)
 {
 	import std.algorithm : filter, canFind;
+	import std.range : retro;
 	import std.array : array, uninitializedArray;
 	import std.d.formatter : Formatter;
 	import std.exception:enforce;
@@ -189,7 +190,7 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 				if (i != marker.index)
 					break;
 				formatter.sink = output.lockingTextWriter();
-				foreach (node; marker.nodes)
+				foreach (node; retro(marker.nodes))
 					formatter.format(node);
 				formatter.sink = File.LockingTextWriter.init;
 				skipWhitespace(output, tokens, i);

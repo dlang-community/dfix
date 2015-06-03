@@ -13,6 +13,8 @@ pure nothrow void doStuff(int[] x) {
 int[string] someMapping;
 
 void*[] pointers;
+int[][] multiDim;
+int[b][a] multiDim;
 
 enum a = "a";
 enum someString = "123"
