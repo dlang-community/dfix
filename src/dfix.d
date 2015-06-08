@@ -229,6 +229,17 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 			}
 			else
 				goto default;
+		case tok!"deprecated":
+			if (dip64)
+				output.write("@");
+			output.writeToken(tokens[i]);
+			i++;
+			if (i < tokens.length && tokens[i] == tok!"(")
+				skipAndWrite!("(", ")")(output, tokens, i);
+			if (i < tokens.length)
+				goto default;
+			else
+				break;
 		case tok!"stringLiteral":
 			immutable size_t stringBookmark = i;
 			while (tokens[i] == tok!"stringLiteral")
@@ -258,7 +269,6 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 				break;
 		case tok!"override":
 		case tok!"final":
-		case tok!"deprecated":
 		case tok!"abstract":
 		case tok!"align":
 		case tok!"pure":

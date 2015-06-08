@@ -72,4 +72,6 @@ struct MisplacedAttribute
 	}
 }
 
+deprecated("string" "concat") int x;
+
 enum bool isSome(T) = is(T == int);
