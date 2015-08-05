@@ -159,6 +159,7 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 
 				// skip over function name
 				skipIdentifierChain(output, tokens, i, true);
+				skipWhitespace(output, tokens, i, false);
 
 				// skip first paramters
 				skipAndWrite!("(", ")")(output, tokens, i);
