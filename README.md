@@ -16,3 +16,16 @@ Tool for automatically upgrading D source code
 dfix will edit your files in-place. Do not use dfix on files that have no
 backup copies. Source control solves this problem for you. Double-check the
 results before checking in the modified code.
+
+## Installation
+
+OS X users with homebrew should be able to install via ```brew install dfix``` for the latest stable release or ```brew install dfix --HEAD``` for the latest git master branch.
+
+Other users should manually install, e.g. on *nix systems:
+* ```git clone https://github.com/Hackerpilot/dfix```
+* ```cd dfix```
+* ```git checkout v0.2.2``` if you want the stable release
+* ```git submodule update --init```
+* ```make``` to build
+* ```make test``` to test
+* either add the ```bin``` directory to your path or copy to another directory that is on your path.
