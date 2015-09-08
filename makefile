@@ -1,3 +1,5 @@
+DMD?=dmd
+
 FLAGS = -Ilibdparse/src/\
 	-wi\
 	-g\
@@ -14,7 +16,7 @@ FILES = src/dfix.d\
 dfix_binary:
 	rm -rf bin
 	mkdir -p bin
-	dmd ${FILES} ${FLAGS}
+	$(DMD) ${FILES} ${FLAGS}
 	rm -f bin/dfix.o
 
 clean:
