@@ -124,6 +124,53 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 
 	auto formatter = new Formatter!(File.LockingTextWriter)(File.LockingTextWriter.init);
 
+	void writeType(T)(File output, T tokens, ref size_t i)
+	{
+		if (isBasicType(tokens[i].type))
+		{
+			writeToken(output, tokens[i]);
+			i++;
+		}
+		else if ((tokens[i] == tok!"const" || tokens[i] == tok!"immutable"
+				|| tokens[i] == tok!"shared" || tokens[i] == tok!"inout")
+				&& tokens[i + 1] == tok!"(")
+		{
+			writeToken(output, tokens[i]);
+			i++;
+			skipAndWrite!("(", ")")(output, tokens, i);
+		}
+		else
+		{
+			skipIdentifierChain(output, tokens, i, true);
+			if (i < tokens.length && tokens[i] == tok!"!")
+			{
+				writeToken(output, tokens[i]);
+				i++;
+				if (i + 1 < tokens.length && tokens[i + 1] == tok!"(")
+					skipAndWrite!("(", ")")(output, tokens, i);
+				else if (tokens[i].type == tok!"identifier")
+					skipIdentifierChain(output, tokens, i, true);
+				else
+				{
+					writeToken(output, tokens[i]);
+					i++;
+				}
+			}
+		}
+		skipWhitespace(output, tokens, i);
+		// print out suffixes
+		while (i < tokens.length && (tokens[i] == tok!"*" || tokens[i] == tok!"["))
+		{
+			if (tokens[i] == tok!"*")
+			{
+				writeToken(output, tokens[i]);
+				i++;
+			}
+			else if (tokens[i] == tok!"[")
+				skipAndWrite!("[", "]")(output, tokens, i);
+		}
+	}
+
 	for (size_t i = 0; i < tokens.length; i++)
 	{
 		markerLoop: foreach (marker; markers)
@@ -148,13 +195,7 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 				skipWhitespace(output, tokens, i, false);
 
 				// skip over function return type
-				if (isBasicType(tokens[i].type))
-				{
-					writeToken(output, tokens[i]);
-					i++;
-				}
-				else
-					skipIdentifierChain(output, tokens, i, true);
+				writeType(output, tokens, i);
 				skipWhitespace(output, tokens, i);
 
 				// skip over function name
@@ -163,12 +204,13 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 
 				// skip first paramters
 				skipAndWrite!("(", ")")(output, tokens, i);
+
 				immutable bookmark = i;
 				skipWhitespace(output, tokens, i, false);
 
 				// If there is a second set of parameters, go back to the bookmark
 				// and print out the whitespace
-				if (tokens[i] == tok!"(")
+				if (i < tokens.length && tokens[i] == tok!"(")
 				{
 					i = bookmark;
 					skipWhitespace(output, tokens, i);
@@ -182,7 +224,7 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 				output.write(" ", marker.functionAttribute);
 
 				// if there was no whitespace, add it after the moved attribute
-				if (tokens[i] != tok!"whitespace")
+				if (i < tokens.length && tokens[i] != tok!"whitespace" && tokens[i] != tok!";")
 					output.write(" ");
 
 				markers = markers[1 .. $];
@@ -657,9 +699,20 @@ void skipAndWrite(alias Open, alias Close)(File output, const(Token)[] tokens, r
 	index++;
 	while (index < tokens.length && depth > 0) switch (tokens[index].type)
 	{
-	case tok!Open: depth++;  writeToken(output, tokens[index]); index++; break;
-	case tok!Close: depth--; writeToken(output, tokens[index]); index++; break;
-	default:                 writeToken(output, tokens[index]); index++; break;
+	case tok!Open:
+		depth++;
+		writeToken(output, tokens[index]);
+		index++;
+		break;
+	case tok!Close:
+		depth--;
+		writeToken(output, tokens[index]);
+		index++;
+		break;
+	default:
+		writeToken(output, tokens[index]);
+		index++;
+		break;
 	}
 }
 
