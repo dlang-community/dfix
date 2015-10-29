@@ -1,9 +1,9 @@
 module dfix;
 
-import std.lexer;
-import std.d.lexer;
-import std.d.parser;
-import std.d.ast;
+import std.experimental.lexer;
+import dparse.lexer;
+import dparse.parser;
+import dparse.ast;
 import std.stdio;
 import std.file;
 
@@ -99,7 +99,7 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 	import std.algorithm : filter, canFind;
 	import std.range : retro;
 	import std.array : array, uninitializedArray;
-	import std.d.formatter : Formatter;
+	import dparse.formatter : Formatter;
 	import std.exception:enforce;
 
 	File input = File(fileName, "rb");

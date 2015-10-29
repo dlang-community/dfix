@@ -1,22 +1,19 @@
-DMD?=dmd
+DMD ?= dmd
 
-FLAGS = -Ilibdparse/src/\
+FLAGS := -Ilibdparse/src/\
+	-Ilibdparse/experimental_allocator/src/\
 	-wi\
 	-g\
 	-ofbin/dfix
 
-FILES = src/dfix.d\
-	libdparse/src/std/allocator.d\
-	libdparse/src/std/lexer.d\
-	libdparse/src/std/d/lexer.d\
-	libdparse/src/std/d/parser.d\
-	libdparse/src/std/d/formatter.d\
-	libdparse/src/std/d/ast.d
+FILES := src/dfix.d\
+	$(shell find libdparse/experimental_allocator/src/ -name "*.d")\
+	$(shell find libdparse/src/ -name "*.d")
 
 dfix_binary:
 	rm -rf bin
 	mkdir -p bin
-	$(DMD) ${FILES} ${FLAGS}
+	${DMD} ${FILES} ${FLAGS}
 	rm -f bin/dfix.o
 
 clean:
