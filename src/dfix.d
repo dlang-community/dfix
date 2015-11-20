@@ -106,7 +106,6 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 	ubyte[] inputBytes = uninitializedArray!(ubyte[])(cast(size_t) input.size);
 	input.rawRead(inputBytes);
 	input.close();
-	File output = File(fileName, "wb");
 	StringCache cache = StringCache(StringCache.defaultBucketCount);
 	LexerConfig config;
 	config.fileName = fileName;
@@ -115,7 +114,15 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 	auto parseTokens = tokens.filter!(a => a != tok!"whitespace"
 		&& a != tok!"comment" && a != tok!"specialTokenSequence").array;
 
-	auto mod = parseModule(parseTokens, fileName, null, &doesNothing);
+	uint errorCount;
+	auto mod = parseModule(parseTokens, fileName, null, &reportErrors, &errorCount);
+	if (errorCount > 0)
+	{
+		stderr.writefln("%d parse errors encountered. Aborting.", errorCount);
+		return;
+	}
+
+	File output = File(fileName, "wb");
 	auto visitor = new DFixVisitor;
 	visitor.visit(mod);
 	relocateMarkers(visitor.markers, tokens);
@@ -879,4 +886,12 @@ void skipAsmBlock(File output, const(Token)[] tokens, ref size_t i)
 /**
  * Dummy message output function for the lexer/parser
  */
-void doesNothing(string, size_t, size_t, string, bool) {}
+void reportErrors(string fileName, size_t lineNumber, size_t columnNumber,
+	string message, bool isError)
+{
+	import std.stdio : stderr;
+
+	if (!isError)
+		return;
+	stderr.writefln("%s(%d:%d)[error]: %s", fileName, lineNumber, columnNumber, message);
+}
