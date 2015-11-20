@@ -118,7 +118,8 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 	auto mod = parseModule(parseTokens, fileName, null, &reportErrors, &errorCount);
 	if (errorCount > 0)
 	{
-		stderr.writefln("%d parse errors encountered. Aborting.", errorCount);
+		stderr.writefln("%d parse errors encountered. Aborting upgrade of %s",
+			errorCount, fileName);
 		return;
 	}
 
