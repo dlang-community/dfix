@@ -5,4 +5,5 @@ __dummy.html
 *.obj
 bin
 test/testfile.d
-
+dfix
+dub.selections.json

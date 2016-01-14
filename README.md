@@ -24,7 +24,7 @@ OS X users with homebrew should be able to install via ```brew install dfix``` f
 Other users should manually install, e.g. on *nix systems:
 * ```git clone https://github.com/Hackerpilot/dfix```
 * ```cd dfix```
-* ```git checkout v0.3.0``` if you want the stable release
+* ```git checkout v0.3.1``` if you want the stable release
 * ```git submodule update --init```
 * ```make``` to build
 * ```make test``` to test
