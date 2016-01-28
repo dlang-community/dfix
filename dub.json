@@ -6,6 +6,6 @@
 	"license" : "BSL-1.0",
 	"targetType": "executable",
 	"dependencies": {
-		"libdparse": "~>0.3.0"
+		"libdparse": "~>0.4.3"
 	},
 }
