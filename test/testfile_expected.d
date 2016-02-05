@@ -81,3 +81,5 @@ string[] doStuff() const;
 string* doStuff() const;
 
 alias c = a .b;
+
+size_t replicateBits(size_t , )() {}
