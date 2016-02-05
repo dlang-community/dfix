@@ -799,6 +799,9 @@ void skipIdentifierChain(File output, const(Token)[] tokens, ref size_t index, b
 		if (tokens[i] != tok!".")
 			break loop;
 		break;
+	case tok!"whitespace":
+		index++;
+		break;
 	default:
 		break loop;
 	}

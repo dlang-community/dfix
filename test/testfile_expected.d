@@ -79,3 +79,5 @@ enum bool isSome(T) = is(T == int);
 immutable(char) toString() const;
 string[] doStuff() const;
 string* doStuff() const;
+
+alias c = a .b;
