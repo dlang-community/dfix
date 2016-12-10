@@ -5,6 +5,7 @@ import dparse.lexer;
 import dparse.parser;
 import dparse.ast;
 import std.stdio;
+import std.format;
 import std.file;
 
 int main(string[] args)
