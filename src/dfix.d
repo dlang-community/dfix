@@ -101,7 +101,8 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 	import std.range : retro;
 	import std.array : array, uninitializedArray;
 	import dparse.formatter : Formatter;
-	import std.exception:enforce;
+	import std.exception : enforce;
+	import dparse.rollback_allocator : RollbackAllocator;
 
 	File input = File(fileName, "rb");
 	ubyte[] inputBytes = uninitializedArray!(ubyte[])(cast(size_t) input.size);
@@ -115,8 +116,9 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 	auto parseTokens = tokens.filter!(a => a != tok!"whitespace"
 		&& a != tok!"comment" && a != tok!"specialTokenSequence").array;
 
+	RollbackAllocator allocator;
 	uint errorCount;
-	auto mod = parseModule(parseTokens, fileName, null, &reportErrors, &errorCount);
+	auto mod = parseModule(parseTokens, fileName, &allocator, &reportErrors, &errorCount);
 	if (errorCount > 0)
 	{
 		stderr.writefln("%d parse errors encountered. Aborting upgrade of %s",
