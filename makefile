@@ -4,6 +4,7 @@ FLAGS := -Ilibdparse/src/\
 	-Ilibdparse/experimental_allocator/src/\
 	-wi\
 	-g\
+	-dip25\
 	-ofbin/dfix
 
 FILES := src/dfix.d\
