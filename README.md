@@ -1,4 +1,4 @@
-# dfix [![CI status](https://travis-ci.org/Hackerpilot/dfix.svg?branch=master)](https://travis-ci.org/Hackerpilot/fix/)
+# dfix [![CI status](https://travis-ci.org/dlang-community/dfix.svg?branch=master)](https://travis-ci.org/dlang-community/fix/)
 
 Tool for automatically upgrading D source code
 
