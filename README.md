@@ -29,3 +29,9 @@ Other users should manually install, e.g. on *nix systems:
 * ```make``` to build
 * ```make test``` to test
 * either add the ```bin``` directory to your path or copy to another directory that is on your path.
+
+### Installing with DUB
+
+```sh
+> dub fetch --version='~master' dfix && dub run dfix
+```
