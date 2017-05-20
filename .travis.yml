@@ -1,4 +1,10 @@
 sudo: false
 language: d
+d:
+  - dmd-nightly
+  - dmd-beta
+  - dmd
+  - ldc-beta
+  - ldc
 script:
     - git submodule update --init --recursive && make
