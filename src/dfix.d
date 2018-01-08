@@ -17,11 +17,20 @@ int main(string[] args)
 	bool dip64;
 	// http://wiki.dlang.org/DIP65
 	bool dip65 = true;
+	//https://github.com/dlang/DIPs/blob/master/DIPs/DIP1003.md
+	bool dip1003 = true;
 
 	bool help;
 
 	try
-		getopt(args, "dip64", &dip64, "dip65", &dip65, "help|h", &help);
+	{
+		getopt(args,
+			"dip64", &dip64,
+			"dip65", &dip65,
+			"dip1003", &dip1003,
+			"help|h", &help,
+		);
+	}
 	catch (Exception e)
 	{
 		stderr.writeln(e.msg);
@@ -56,7 +65,7 @@ int main(string[] args)
 	foreach (f; parallel(files))
 	{
 		try
-			upgradeFile(f, dip64, dip65);
+			upgradeFile(f, dip64, dip65, dip1003);
 		catch (Exception e)
 			stderr.writeln("Failed to upgrade ", f, ":(", e.file, ":", e.line, ") ", e.msg);
 	}
@@ -87,6 +96,9 @@ Options:
     --dip65
         Rewrites catch blocks to be compliant with DIP65. This defaults to
         "true". Use --dip65=false to disable this fix.
+    --dip1003
+        Rewrites body blocks to be compliant with DIP1003. This defaults to
+        "true". Use --dip1003=false to disable this fix.
     --help -h
         Prints this help message
 `);
@@ -95,7 +107,7 @@ Options:
 /**
  * Fixes the given file.
  */
-void upgradeFile(string fileName, bool dip64, bool dip65)
+void upgradeFile(string fileName, bool dip64, bool dip65, bool dip1003)
 {
 	import std.algorithm : filter, canFind;
 	import std.range : retro;
@@ -103,6 +115,7 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 	import dparse.formatter : Formatter;
 	import std.exception : enforce;
 	import dparse.rollback_allocator : RollbackAllocator;
+	import std.functional : toDelegate;
 
 	File input = File(fileName, "rb");
 	ubyte[] inputBytes = uninitializedArray!(ubyte[])(cast(size_t) input.size);
@@ -118,7 +131,7 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 
 	RollbackAllocator allocator;
 	uint errorCount;
-	auto mod = parseModule(parseTokens, fileName, &allocator, &reportErrors, &errorCount);
+	auto mod = parseModule(parseTokens, fileName, &allocator, toDelegate(&reportErrors), &errorCount);
 	if (errorCount > 0)
 	{
 		stderr.writefln("%d parse errors encountered. Aborting upgrade of %s",
@@ -294,6 +307,12 @@ void upgradeFile(string fileName, bool dip64, bool dip65)
 				goto default;
 			else
 				break;
+		case tok!"body":
+			if (dip1003)
+				output.write("do");
+			else
+				output.write("body");
+			break;
 		case tok!"stringLiteral":
 			immutable size_t stringBookmark = i;
 			while (tokens[i] == tok!"stringLiteral")

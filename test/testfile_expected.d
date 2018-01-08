@@ -83,3 +83,7 @@ string* doStuff() const;
 alias c = a .b;
 
 size_t replicateBits(size_t , )() {}
+
+void bodyToDo()
+in {}
+do {}
