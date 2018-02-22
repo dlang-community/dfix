@@ -1,15 +1,15 @@
 DMD ?= dmd
 
 FLAGS := -Ilibdparse/src/\
-	-Ilibdparse/experimental_allocator/src/\
+	-Istdx-allocator/source/\
 	-wi\
 	-g\
 	-dip25\
 	-ofbin/dfix
 
-FILES := src/dfix.d\
-	$(shell find libdparse/experimental_allocator/src/ -name "*.d")\
-	$(shell find libdparse/src/ -name "*.d")
+FILES := src/dfix.d \
+	$(shell find libdparse/src/ -name "*.d") \
+	$(shell find stdx-allocator/source/ -name "*.d")
 
 dfix_binary:
 	rm -rf bin
