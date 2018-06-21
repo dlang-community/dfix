@@ -307,12 +307,6 @@ void upgradeFile(string fileName, bool dip64, bool dip65, bool dip1003)
 				goto default;
 			else
 				break;
-		case tok!"body":
-			if (dip1003)
-				output.write("do");
-			else
-				output.write("body");
-			break;
 		case tok!"stringLiteral":
 			immutable size_t stringBookmark = i;
 			while (tokens[i] == tok!"stringLiteral")
@@ -587,6 +581,12 @@ void upgradeFile(string fileName, bool dip64, bool dip65, bool dip1003)
 				}
 			}
 			break;
+		case tok!"identifier":
+			if (tokens[i].text == "body")
+				(dip1003 && tokens.isBodyKw(i)) ? output.write("do") : output.write("body");
+			else
+				goto default;
+			break;
 		default:
 			output.writeToken(tokens[i]);
 			break;
@@ -744,6 +744,40 @@ void skipAndWrite(alias Open, alias Close)(File output, const(Token)[] tokens, r
 		index++;
 		break;
 	}
+}
+
+/**
+ * Returns true if `body` is a keyword and false if it's an identifier.
+ */
+bool isBodyKw(const(Token)[] tokens, size_t index)
+{
+	assert(index);
+	index -= 1;
+	L0: while (index--) switch (tokens[index].type)
+	{
+		// `in {} body {}`
+		case tok!"}":
+			return true;
+		case tok!"comment":
+			continue;
+		// `void foo () return {}` or `return body;`
+		case tok!"return":
+			continue;
+		// `void foo () @safe pure body {}`
+		case tok!")":
+		case tok!"const":
+		case tok!"immutable":
+		case tok!"inout":
+		case tok!"shared":
+		case tok!"@":
+		case tok!"pure":
+		case tok!"nothrow":
+		case tok!"scope":
+			return true;
+		default:
+			break L0;
+	}
+	return false;
 }
 
 /**
