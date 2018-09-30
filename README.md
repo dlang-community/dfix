@@ -26,7 +26,7 @@ Other users should manually install, e.g. on \*nix systems:
 
 * `git clone https://github.com/dlang-community/dfix && git submodule update --init`
 * `cd dfix`
-* `git checkout v0.3.2` if you want the stable release
+* `git checkout v0.3.5` if you want the stable release
 * `make` to build
 * `make test` to test
 * either add the `bin` directory to your path or copy to another directory that is on your path.
