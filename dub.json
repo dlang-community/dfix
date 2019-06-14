@@ -7,5 +7,5 @@
 	"targetType": "executable",
 	"dependencies": {
 		"libdparse": "~>0.8.7"
-	},
+	}
 }
